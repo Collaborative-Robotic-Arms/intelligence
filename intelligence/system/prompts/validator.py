@@ -12,6 +12,8 @@ CHECKS PERFORMED (reachability excluded — handled by robot nodes):
   WORKSPACE_OK / WORKSPACE_EXCEEDED      (table boundary ±0.200 X, ±0.250 Y)
   COLLISION_FREE / COLLISION_DETECTED    (brick overlap on same layer)
   HEIGHT_OK / HEIGHT_EXCEEDED            (max 0.200 m stack)
+  COMPONENTS_OK / COMPONENTS_MISMATCH    (agent's declared piece count vs actual)
+  BRICK_COUNT_OK / BRICK_COUNT_MISMATCH  (agent's declared brick count vs actual)
 
 DECISION RULES:
   "accept"  → all checks passed
@@ -20,6 +22,9 @@ DECISION RULES:
   "suggest" → fixable: bounds exceeded (shift toward centre),
                collision (offset bricks), height (reduce layers),
                inventory (substitute brick type)
+  "COMPONENTS_MISMATCH or BRICK_COUNT_MISMATCH" → reject (the agent's mental
+                model didn't match the design it produced; force a redesign rather than
+                execute a plan the agent didn't really intend)
 
 OUTPUT — valid JSON only:
 {

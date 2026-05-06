@@ -27,6 +27,8 @@ from workspace_constraints import (
     check_workspace_bounds,
     check_collision,
     check_height,
+    check_components_match,    
+    check_brick_count_match,
 )
 
 logger = logging.getLogger(__name__)
@@ -88,6 +90,21 @@ class ValidatorChain:
         arrangement     = getattr(plan, "arrangement",     [])
         required_bricks = getattr(plan, "required_bricks", [])
         structure       = getattr(plan, "structure",       "unknown")
+        
+        # Phase A — read declared intent
+        expected_components  = getattr(plan, "expected_components",  1)
+        expected_brick_count = getattr(plan, "expected_brick_count", 0)
+
+        checks = [
+            check_inventory(required_bricks, inventory),
+            check_workspace_bounds(arrangement),
+            check_collision(arrangement),
+            check_height(arrangement),
+            # Phase A
+            check_components_match(arrangement, expected_components),
+            check_brick_count_match(arrangement, expected_brick_count),
+        ]
+        failed = [c for c in checks if not c.passed]
 
         checks = [
             check_inventory(required_bricks, inventory),
@@ -155,7 +172,12 @@ class ValidatorChain:
             return self._fallback(failed, checks)
 
     def _fallback(self, failed, checks, tokens=0):
-        hard = {"INVENTORY_INSUFFICIENT","COLLISION_DETECTED","HEIGHT_EXCEEDED"}
+        hard = {
+            "INVENTORY_INSUFFICIENT",
+            "COLLISION_DETECTED",
+            "HEIGHT_EXCEEDED",
+            "COMPONENTS_MISMATCH",   # NEW: agent's mental model was wrong
+        }
         is_hard = any(c.code in hard for c in failed)
         return ValidatorResult(
             status        = "reject" if is_hard else "suggest",

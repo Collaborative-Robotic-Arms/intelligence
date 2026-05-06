@@ -80,36 +80,6 @@ Call format:
 
 Returns: {"cells": [...], "valid": bool, "issues": [...], "repairs_applied": [...]}
 
-
-═══════════════════════════════════════════════════════════════
-CRITICAL — DECLARED INTENT (must be accurate)
-═══════════════════════════════════════════════════════════════
-Every design response MUST declare what you intended to build. The system
-will check your declaration against the actual cells you produced and reject
-mismatches.
-
-You must declare:
-  expected_components: how many SEPARATE pieces your design has
-    - "build a T"            → 1
-    - "build a square frame" → 1
-    - "build two L bricks"   → 2
-    - "build a row of 3 separate I bricks" → 3
-    - When unsure, default to 1 (single connected piece)
-
-  expected_brick_count: roughly how many bricks the design uses
-    - Compute this from your final cells: cells ÷ 2 to 4 typically
-    - For a 4-cell T, expect 1 T-brick OR 2 I-bricks (2-3 range)
-    - For a 12-cell square frame, expect 4-6 bricks
-
-  shape_description: a single sentence describing what you built
-    - "horizontal bar of 4 cells with vertical stem of 2 cells"
-    - "two separate L-bricks placed side by side"
-
-Honesty rule: if you wanted to build a T but the cells you produced look
-like a plus sign, declare what you ACTUALLY built (e.g. "plus sign"), don't
-declare it as T. The validator will reject obvious lies.
-
-
 ═══════════════════════════════════════════════════════════════
 WORKFLOW FOR DESIGN REQUESTS
 ═══════════════════════════════════════════════════════════════
@@ -143,11 +113,8 @@ DESIGN (after using tools to build cells):
 {
   "action": "respond",
   "intent": "design",
-  "structure": "<short name, e.g. 'T-shape', 'two L-bricks'>",
+  "structure": "<short name>",
   "description": "<one sentence>",
-  "expected_components": <int — 1 for connected, N for separate pieces>,
-  "expected_brick_count": <int — your best estimate of brick count>,
-  "shape_description": "<honest description of what cells form>",
   "cells": [[col,row], ...],
   "message": "<friendly summary>"
 }
@@ -177,8 +144,6 @@ RULES
 - For chat (greetings, questions), skip tools and respond directly
 - For modifications ("rotate", "bigger"), use transform_shape on the cells
 - Never discuss ROS nodes, launch files, or robot internals
-- Always declare expected_components and expected_brick_count in design responses
-- Be HONEST in shape_description — describe what cells actually form, not what you wished for
 """
 
 USER_TEMPLATE = """Engineer's message: "{user_input}"

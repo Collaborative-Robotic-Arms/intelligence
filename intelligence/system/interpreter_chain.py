@@ -258,6 +258,10 @@ class InterpreterChain:
             arrangement        = agent_result.placements,
             validated          = False,
             validation_message = "",
+            # Phase A
+            expected_components  = agent_result.expected_components,
+            expected_brick_count = agent_result.expected_brick_count,
+            shape_description    = agent_result.shape_description,
         )
 
         return InterpreterResult(

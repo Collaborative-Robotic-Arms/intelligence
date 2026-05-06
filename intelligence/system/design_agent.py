@@ -41,6 +41,10 @@ class AgentResult:
     placements: list = field(default_factory=list)   # solver output if try_solve found one
     steps:      list = field(default_factory=list)   # the trace of think→act→observe
     error:      str  = ""
+    # Phase A
+    expected_components:  int = 1
+    expected_brick_count: int = 0
+    shape_description:    str = ""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -65,6 +69,10 @@ class AgentState(TypedDict):
     description:      str
     placements:       list
     iteration:        int
+    # Phase A
+    expected_components: int
+    expected_brick_count: int
+    shape_description: str
 
 
 MAX_ITERATIONS = 6
@@ -121,6 +129,36 @@ If try_solve fails repeatedly, the shape may need:
   - Even cell counts in each region
   - More inventory (but you must work with what's available)
 
+        
+═══════════════════════════════════════════════════════════════
+DECLARED INTENT — MUST BE ACCURATE
+═══════════════════════════════════════════════════════════════
+
+Every finish action MUST declare what you intended to build. The system
+will check your declaration against the cells you produced and reject
+mismatches.
+
+You must declare:
+
+  expected_components: how many SEPARATE pieces your design has
+    "build a T"             → 1
+    "build a square frame"  → 1
+    "build two L bricks"    → 2
+    "row of 3 separate I's" → 3
+    When unsure, use 1 (single connected piece).
+
+  expected_brick_count: roughly how many bricks the design uses
+    Read this from the try_solve result you just saw — that's the truth.
+
+  shape_description: a one-sentence honest description of the cells
+    "horizontal bar of 4 cells with vertical stem of 2 cells"
+    "two separate L-shapes side by side"
+
+HONESTY RULE: if the cells you produced look like a plus sign even though
+the user asked for a T, declare what you ACTUALLY built ("plus sign"),
+not what was requested. The validator catches obvious mismatches.
+
+
 ═══════════════════════════════════════════════════════════════
 RESPONSE FORMAT — EVERY TURN OUTPUTS JSON
 ═══════════════════════════════════════════════════════════════
@@ -138,6 +176,9 @@ To finish (only after try_solve succeeded):
   "action": "finish",
   "structure": "<short name>",
   "description": "<one sentence>",
+  "expected_components": <int — 1 for connected, N for separate pieces>,
+  "expected_brick_count": <int — match the count from try_solve>,
+  "shape_description": "<honest description of what cells form>",
   "cells": [[col,row], ...]
 }
 
@@ -315,6 +356,10 @@ def _act_node(state: AgentState) -> dict:
             "structure":   data.get("structure", "design"),
             "description": data.get("description", ""),
             "cells":       data.get("cells", state.get("cells", [])),
+            # Phase A
+            "expected_components":  int(data.get("expected_components", 1)),
+            "expected_brick_count": int(data.get("expected_brick_count", 0)),
+            "shape_description":    data.get("shape_description", ""),
             "steps": state["steps"] + [{
                 "type": "finish",
                 "thought": thought,
@@ -421,6 +466,10 @@ def design_shape(
         "description":      "",
         "placements":       [],
         "iteration":        0,
+        # Phase A
+        "expected_components":  1,
+        "expected_brick_count": 0,
+        "shape_description":    "",
     }
 
     try:
@@ -447,6 +496,11 @@ def design_shape(
         placements  = placements,
         steps       = steps,
         error       = "" if success else "Agent did not produce a valid design",
+        # Phase A
+        expected_components  = final_state.get("expected_components", 1),
+        expected_brick_count = final_state.get("expected_brick_count",
+                                                len(placements)),
+        shape_description    = final_state.get("shape_description", ""),
     )
 
 

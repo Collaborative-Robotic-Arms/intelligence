@@ -334,6 +334,88 @@ def check_height(arrangement: list[dict]) -> CheckResult:
     return CheckResult(passed=True, code="HEIGHT_OK",
                        message=f"Height OK (~{estimated_height:.2f}m)")
 
+def check_components_match(arrangement: list[dict],
+                           expected_components: int) -> CheckResult:
+    """Phase A — actual component count must equal what the agent declared."""
+    if not arrangement:
+        return CheckResult(passed=True, code="COMPONENTS_OK",
+                           message="Empty plan — trivially OK")
+
+    all_cells = set()
+    for brick in arrangement:
+        cells = get_occupied_cells(
+            brick.get("brick", "I"),
+            brick.get("x", 0.0),
+            brick.get("y", 0.0),
+            brick.get("rotation", 0),
+        )
+        for cx, cy in cells:
+            all_cells.add((round(cx / GRID_STEP), round(cy / GRID_STEP)))
+
+    actual = _count_connected_components(all_cells)
+
+    if actual != expected_components:
+        return CheckResult(
+            passed=False,
+            code="COMPONENTS_MISMATCH",
+            message=f"Agent declared {expected_components} component(s), "
+                    f"design has {actual}",
+            detail=("Either the design has unintended gaps, or the agent "
+                    "miscounted. Force a redesign."),
+        )
+    return CheckResult(
+        passed=True, code="COMPONENTS_OK",
+        message=f"Component count matches declaration ({actual})",
+    )
+
+
+def check_brick_count_match(arrangement: list[dict],
+                            expected_brick_count: int,
+                            tolerance: int = 1) -> CheckResult:
+    """Phase A — actual brick count must be close to declared (±tolerance)."""
+    actual = len(arrangement)
+
+    if expected_brick_count <= 0:
+        return CheckResult(
+            passed=True, code="BRICK_COUNT_SKIPPED",
+            message="No declared brick count — skipping check",
+        )
+
+    diff = abs(actual - expected_brick_count)
+    if diff > tolerance:
+        return CheckResult(
+            passed=False,
+            code="BRICK_COUNT_MISMATCH",
+            message=f"Agent declared {expected_brick_count} bricks, "
+                    f"design uses {actual}",
+            detail=f"Off by {diff} (tolerance {tolerance}).",
+        )
+    return CheckResult(
+        passed=True, code="BRICK_COUNT_OK",
+        message=f"Brick count matches declaration ({actual})",
+    )
+
+
+def _count_connected_components(cells: set) -> int:
+    """4-connectivity flood fill — returns number of disjoint regions."""
+    if not cells:
+        return 0
+    remaining = set(cells)
+    count = 0
+    while remaining:
+        seed = next(iter(remaining))
+        comp = {seed}
+        stack = [seed]
+        while stack:
+            c, r = stack.pop()
+            for n in [(c+1, r), (c-1, r), (c, r+1), (c, r-1)]:
+                if n in remaining and n not in comp:
+                    comp.add(n)
+                    stack.append(n)
+        remaining -= comp
+        count += 1
+    return count
+
 
 def run_all_checks(
     arrangement:     list[dict],
