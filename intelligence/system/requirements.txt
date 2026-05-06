@@ -1,0 +1,19 @@
+# Task 1 — UI skeleton
+streamlit>=1.35.0
+
+# Task 2 — ROS bridge (optional, only needed with real ROS2)
+# rclpy  # install from your ROS2 environment, not pip
+
+# Task 3 & 4 — LangChain + LLM
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-groq>=0.1.0
+langchain-anthropic>=0.1.0
+
+# Task 5 — Layout visualisation
+matplotlib>=3.8.0
+numpy>=1.26.0
+
+# Task 6+ — Utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
